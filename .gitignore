@@ -1,0 +1,11 @@
+# frontend generated files
+frontend/node_modules/
+frontend/dist/
+
+# Python cache
+backend/__pycache__/
+*.pyc
+
+# Local editor/config artifacts
+.vscode/
+.DS_Store
