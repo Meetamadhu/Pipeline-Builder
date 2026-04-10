@@ -41,7 +41,12 @@ export const SubmitButton: React.FC<{
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ nodes: apiNodes, edges: apiEdges }),
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (!res.ok) {
+        const detail = await res.text().catch(() => '');
+        throw new Error(
+          `HTTP ${res.status}${detail ? `: ${detail.slice(0, 120)}` : ''}`,
+        );
+      }
       const d = await res.json();
       showToast(
         `Pipeline: ${d.num_nodes} nodes · ${d.num_edges} edges · DAG: ${d.is_dag ? 'Yes ✓' : 'No (cycle detected) ✗'}`,
@@ -49,11 +54,14 @@ export const SubmitButton: React.FC<{
       );
     } catch (err) {
       console.error('Submit error:', err, 'POST', BACKEND_URL);
-      const hint =
-        API_BASE.startsWith('http://localhost')
-          ? 'Set VITE_API_BASE_URL in Vercel (Production) to your Render URL, then redeploy.'
-          : 'Check Render service is up and CORS/network allows this origin.';
-      showToast(`Backend unreachable (${BACKEND_URL}). ${hint}`, 'error');
+      const msg = err instanceof Error ? err.message : String(err);
+      const is403 = msg.includes('HTTP 403');
+      const hint403 =
+        '403 often means Vercel Deployment Protection on the URL you opened, or the API URL is wrong. For API, use only your Render host (no /pipelines path in VITE_API_BASE_URL).';
+      const hintDefault = API_BASE.startsWith('http://localhost')
+        ? 'Set VITE_API_BASE_URL in Vercel (Production) to your Render URL, then redeploy.'
+        : 'Check Render is running and VITE_API_BASE_URL is exactly: https://<your-render-app>.onrender.com';
+      showToast(`${msg} · ${BACKEND_URL}${is403 ? `. ${hint403}` : `. ${hintDefault}`}`, 'error');
     } finally {
       setSubmitting(false);
     }
