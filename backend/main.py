@@ -10,7 +10,7 @@ class Pipeline(BaseModel):
     edges: List[Dict[str, Any]]
 
 
-def is_dag(num_nodes: int, edges: List[Dict[str, Any]]) -> bool:
+def is_dag(edges: List[Dict[str, Any]]) -> bool:
     """
     Validate that the graph described by the edges is a DAG using DFS.
     Edges are expected to contain at least 'source' and 'target' keys.
@@ -60,10 +60,12 @@ def is_dag(num_nodes: int, edges: List[Dict[str, Any]]) -> bool:
 
 app = FastAPI(title="Pipeline Parser API")
 
+# Must not use allow_credentials=True with allow_origins=["*"] (browser CORS rules).
+# This API does not rely on cookies; credentials stay off so "*" works from Vercel → Render.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -73,7 +75,7 @@ app.add_middleware(
 def parse_pipeline(pipeline: Pipeline) -> Dict[str, Any]:
     num_nodes = len(pipeline.nodes)
     num_edges = len(pipeline.edges)
-    dag = is_dag(num_nodes=num_nodes, edges=pipeline.edges)
+    dag = is_dag(pipeline.edges)
 
     return {
         "num_nodes": num_nodes,

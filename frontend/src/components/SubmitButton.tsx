@@ -3,7 +3,10 @@ import type { Node as ReactFlowNode, Edge as ReactFlowEdge } from 'reactflow';
 import type { PipelineNodeData } from '../store/pipelineStore';
 import { useToast } from './ToastProvider';
 
-const BACKEND_URL = 'http://localhost:8000/pipelines/parse';
+const API_BASE =
+  (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/$/, '') ||
+  'http://localhost:8000';
+const BACKEND_URL = `${API_BASE}/pipelines/parse`;
 
 export const SubmitButton: React.FC<{
   nodes: ReactFlowNode<PipelineNodeData>[];
@@ -45,8 +48,12 @@ export const SubmitButton: React.FC<{
         d.is_dag ? 'success' : 'error',
       );
     } catch (err) {
-      console.error('Submit error:', err);
-      showToast('Backend unreachable. Run: uvicorn main:app --reload', 'error');
+      console.error('Submit error:', err, 'POST', BACKEND_URL);
+      const hint =
+        API_BASE.startsWith('http://localhost')
+          ? 'Set VITE_API_BASE_URL in Vercel (Production) to your Render URL, then redeploy.'
+          : 'Check Render service is up and CORS/network allows this origin.';
+      showToast(`Backend unreachable (${BACKEND_URL}). ${hint}`, 'error');
     } finally {
       setSubmitting(false);
     }
